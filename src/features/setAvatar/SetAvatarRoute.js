@@ -3,6 +3,7 @@ import { redirect } from "react-router-dom"
 import { toast } from "react-toastify"
 import { toastOptions } from "../.."
 import { setAvatarRoute } from "../../utils/APIRoutes"
+import { convertBlobToBase64 } from "../../utils/convert"
 
 export const setAvatarLoader = async () => {
   const user = await JSON.parse(localStorage.getItem("chat-app-user"))
@@ -15,17 +16,17 @@ export const setAvatarLoader = async () => {
         `${api}/${Math.round(Math.random() * 1000)}`
       )
       const blob = new Blob([data], { type: "image/svg+xml" })
-      return URL.createObjectURL(blob)
+      return await convertBlobToBase64(blob)
     })
   )
 
+  //* Images as Base64
   return images
 }
 
 export const setAvatarAction = async ({ request }) => {
   const formData = await request.formData()
   const actionData = Object.fromEntries(formData.entries())
-
   if (!actionData.avatar) {
     toast.error("Please select an avatar", toastOptions)
     return null
@@ -36,9 +37,7 @@ export const setAvatarAction = async ({ request }) => {
     avatarImage: actionData.avatar,
   })
   if (data.status) {
-    user.isAvatarImageSet = true
-    user.avatarImage = actionData.avatar
-    localStorage.setItem("chat-app-user", JSON.stringify(user))
+    localStorage.setItem("chat-app-user", JSON.stringify(data.user))
     return redirect("/")
   }
   toast.error("Error setting you Avatar. Try again.", toastOptions)

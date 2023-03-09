@@ -17,7 +17,7 @@ export const loginAction = async ({ request }) => {
     invalid = true
   }
   if (!password) {
-    toast.error("Password must be at least 5 characters", toastOptions)
+    toast.error("Password is required", toastOptions)
     invalid = true
   }
   if (invalid) return null

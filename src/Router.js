@@ -3,7 +3,10 @@ import App from "./App"
 import { authLoader } from "./features/auth/AuthRoute"
 import { loginAction } from "./features/auth/LoginRoute"
 import { registerAction } from "./features/auth/RegisterRoute"
-import { diligentLoader } from "./features/diligent/DiligentRoute"
+import {
+  diligentAction,
+  diligentLoader,
+} from "./features/diligent/DiligentRoute"
 import {
   setAvatarAction,
   setAvatarLoader,
@@ -11,14 +14,22 @@ import {
 import Diligent from "./pages/Diligent"
 import Login from "./pages/Login"
 import Register from "./pages/Register"
+import RouteError from "./pages/RouteError"
 import SetAvatar from "./pages/SetAvatar"
 
 const router = createBrowserRouter([
   {
     path: "/",
+    errorElement: <RouteError />,
     element: <App />,
     children: [
-      { index: true, loader: diligentLoader, element: <Diligent /> },
+      {
+        index: true,
+        loader: diligentLoader,
+        action: diligentAction,
+        shouldRevalidate: () => false,
+        element: <Diligent />,
+      },
       {
         path: "setAvatar",
         loader: setAvatarLoader,
@@ -41,7 +52,7 @@ const router = createBrowserRouter([
       {
         path: "logout",
         loader: () => {
-          localStorage.removeItem("chat-app-user")
+          localStorage.clear()
           return redirect("/login")
         },
       },

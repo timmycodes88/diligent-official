@@ -12,7 +12,7 @@ export default function SetAvatar() {
     <>
       <Wrapper>
         <Title>Choose your Avatar</Title>
-        <StyledForm action="/setAvatar" method="post">
+        <StyledForm method="post">
           <AvatarsContainer>
             {images.map((image, index) => (
               <Image
@@ -24,7 +24,11 @@ export default function SetAvatar() {
               />
             ))}
           </AvatarsContainer>
-          <input type="hidden" name="avatar" value={images[selected]} />
+          <input
+            type="hidden"
+            name="avatar"
+            value={JSON.stringify(images[selected])}
+          />
           <Button type="submit">Set Avatar</Button>
         </StyledForm>
         <P>You can refresh the page for new ones</P>
