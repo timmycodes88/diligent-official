@@ -1,25 +1,23 @@
-import logo from './logo.svg';
-import './App.css';
+import { Outlet, redirect, useNavigation } from "react-router-dom"
+import tw from "twin.macro"
+import Loader from "./assets/loader.gif"
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+export default function App() {
+  const { state } = useNavigation()
+  return state === "loading" ? (
+    <Loading>
+      <Gif src={Loader} alt="Loading" />
+    </Loading>
+  ) : (
+    <Outlet />
+  )
 }
 
-export default App;
+const Loading = tw.div`w-screen h-screen flex justify-center items-center bg-[#131324]`
+const Gif = tw.img`w-96 h-96`
+
+export const appLoader = () => {
+  //* If there is a user logged in, direct to /
+  if (localStorage.getItem("chat-app-user")) return redirect("/")
+  return redirect("/login")
+}
