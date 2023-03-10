@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react"
 import tw, { styled } from "twin.macro"
 import SyntaxHighlighter from "react-syntax-highlighter"
-import { anOldHope } from "react-syntax-highlighter/dist/esm/styles/hljs"
+import { nightOwl } from "react-syntax-highlighter/dist/esm/styles/hljs"
 
 export default function Feed({ feed }) {
   //* Scroll to Last Message
@@ -36,9 +36,12 @@ export default function Feed({ feed }) {
             )
           } else {
             return (
-              <CodeWrapper fromSelf={fromSelf}>
+              <CodeWrapper
+                ref={isLastMessage ? lastMessage : undefined}
+                fromSelf={fromSelf}
+              >
                 <CodeContainer fromSelf={fromSelf}>
-                  <SyntaxHighlighter language="javascript" style={anOldHope}>
+                  <SyntaxHighlighter language="javascript" style={nightOwl}>
                     {msg}
                   </SyntaxHighlighter>
                 </CodeContainer>
@@ -51,7 +54,7 @@ export default function Feed({ feed }) {
   )
 }
 
-const StyledFeed = tw.div`h-[40rem] overflow-y-auto px-10 py-4 [&::-webkit-scrollbar]:(w-1 bg-[#080420] rounded-xl) flex flex-col [&::-webkit-scrollbar-thumb]:(bg-[#997ae5]/50 rounded-xl hover:(bg-[#997af0]))`
+const StyledFeed = tw.div`h-[calc(100vh - 60px - 80px - 24px)] overflow-y-auto px-10 py-4 [&::-webkit-scrollbar]:(w-1 bg-[#080420] rounded-xl) flex flex-col [&::-webkit-scrollbar-thumb]:(bg-[#997ae5]/50 rounded-xl hover:(bg-[#997af0]))`
 const Message = styled.div(({ fromSelf }) => [
   tw`text-white flex gap-4 mb-4 whitespace-pre-wrap rounded-t-xl p-4 [width: fit-content;] max-w-[80%]`,
   fromSelf
