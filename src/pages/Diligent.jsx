@@ -93,6 +93,17 @@ export default function Diligent() {
     autoResize.current.style.height = autoResize.current.scrollHeight + "px"
   }, [message])
 
+  //* Start Scroll to Bottom on Focused User Change
+  const feedRef = useRef()
+  useEffect(() => {
+    if (!feedRef.current) return
+    const timeout = setTimeout(
+      () => (feedRef.current.scrollTop = feedRef.current.scrollHeight),
+      10
+    )
+    return () => clearTimeout(timeout)
+  }, [focusedUser])
+
   return (
     <>
       <Container>
@@ -153,7 +164,7 @@ export default function Diligent() {
                   </Name>
                 </UserDetails>
               </ChatHeader>
-              <Feed feed={feed} />
+              <Feed feed={feed} ref={feedRef} />
               <ChatInputBox>
                 {showEmojiPicker && (
                   <PickerWrapper ref={pickerRef}>
@@ -210,9 +221,9 @@ const ChatHeader = tw.header`flex justify-between px-10 items-center`
 const UserDetails = tw.div`flex items-center gap-4 rounded-xl`
 const ChatInputBox = tw.div`absolute bottom-0 left-0 right-0 flex items-end gap-4 px-10 py-2 rounded-t-xl bg-blue-800`
 const EmojiButton = styled.button(({ open }) => [
-  tw`relative bg-[#999be5] rounded-lg shadow p-2 [svg]:(w-6 h-6) outline-2`,
-  open && tw`ring-2 ring-[#997ae5]`,
+  tw`relative box-border border-2 border-transparent bg-[#080420] rounded-lg p-2 [svg]:(text-yellow-500 w-6 h-6)`,
+  open && tw`border-[#997ae5]`,
 ])
 const PickerWrapper = tw.div`absolute bottom-16 left-0 w-80 right-0 `
-const ChatInput = tw.textarea`w-full max-h-[20rem] h-10 rounded-xl px-4 py-2 outline-none resize-none bg-[#080420] text-white text-xl placeholder-[#997ae5] border-2 border-[#00000076] focus:(border-[#997af0]) [&::-webkit-scrollbar]:w-0`
-const SendButton = tw.button`transition-all bg-[#131324] flex justify-center items-center border-2 border-[#997ae5] hover:(bg-[#080420] scale-[102%]) text-white text-xl rounded-xl h-11 px-4 pt-2.5 pb-2`
+const ChatInput = tw.textarea`w-full max-h-[20rem] h-12 rounded-xl px-4 py-2 outline-none resize-none bg-[#080420] text-white text-xl placeholder-[#997ae5] border-2 border-[#00000076] focus:(border-[#997af0]) [&::-webkit-scrollbar]:w-0`
+const SendButton = tw.button`transition-all bg-[#131324] flex justify-center items-center border-2 border-transparent hover:(bg-[#080420] scale-[102%] border-[#997ae5]) text-white text-xl rounded-xl h-11 px-4 pt-2.5 pb-2`
