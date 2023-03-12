@@ -19,20 +19,30 @@ const Feed = forwardRef(({ feed }, ref) => {
 
   return (
     <StyledFeed ref={ref}>
-      {feed?.map(({ fromSelf, message }, index) => {
+      {feed?.map(({ fromSelf, message, image }, index) => {
         const isLastMessage = index === feed.length - 1
         const splitMessage = message.split("```")
         return splitMessage.map((msg, index) => {
           if (index % 2 === 0) {
-            if (!msg) return null
+            if (!msg)
+              return (
+                <img
+                  ref={isLastMessage ? lastMessage : undefined}
+                  src={image}
+                  alt="screenshot"
+                />
+              )
             return (
-              <Message
-                key={index}
-                ref={isLastMessage ? lastMessage : undefined}
-                fromSelf={fromSelf}
-              >
-                {msg}
-              </Message>
+              <>
+                {index === 0 && image && <img src={image} alt="screenshot" />}
+                <Message
+                  key={index}
+                  ref={isLastMessage ? lastMessage : undefined}
+                  fromSelf={fromSelf}
+                >
+                  {msg}
+                </Message>
+              </>
             )
           } else {
             return (

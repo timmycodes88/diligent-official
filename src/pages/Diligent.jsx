@@ -13,24 +13,52 @@ import useOnClickOutside from "../hooks/useOnClickOutside"
 import axios from "axios"
 import { getMessagesRoute, host } from "../utils/APIRoutes"
 import { io } from "socket.io-client"
+import { convertBlobToBase64 } from "../utils/convert"
+import reduceImageFileSize from "../utils/reduceImageFileSize"
+
+const socket = io(host)
 
 export default function Diligent() {
-  const socket = useRef()
   const submit = useSubmit()
   const { user, users } = useLoaderData()
+
+  const findUser = id => users.find(user => user._id === id)
+
+  const [notifications, setNotifications] = useState([])
 
   //* Socket Connection
   useEffect(() => {
     if (!user) return
-    socket.current = io(host)
-    socket.current.emit("add-user", user._id)
+    socket.emit("add-user", user._id)
+    return () => socket.emit("remove-user", user._id)
   }, [user])
 
+  //* Notifications
+  const showNotification = (title, options) => {
+    if (Notification.permission !== "granted") {
+      Notification.requestPermission()
+    } else {
+      new Notification(title, options)
+    }
+  }
+
+  //* Recieve Socket Message
   useEffect(() => {
-    if (!socket.current) return
-    socket.current.on("receive-message", ({ message }) => {
-      setFeed(curr => [...curr, { fromSelf: false, message }])
-    })
+    Notification.requestPermission()
+
+    const handleMessage = ({ message, from, image }) => {
+      const user = findUser(from)
+      if (user !== focusedUser) setNotifications(curr => [...curr, from])
+      showNotification(user.username, {
+        body: message,
+      })
+      setFeed(curr =>
+        !curr ? curr : [...curr, { fromSelf: false, message, image }]
+      )
+    }
+
+    socket.on("receive-message", handleMessage)
+    return () => socket.off("receive-message", handleMessage)
   }, [])
 
   //* User and Chat Data State
@@ -40,6 +68,9 @@ export default function Diligent() {
   //* Change Feed on Focus Change
   useEffect(() => {
     if (!focusedUser) return
+    if (typeof focusedUser === "object")
+      setNotifications(curr => curr.filter(id => id !== focusedUser._id))
+
     const fetchMessages = async () => {
       const { data } = await axios.post(getMessagesRoute, {
         from: user,
@@ -51,27 +82,31 @@ export default function Diligent() {
   }, [focusedUser, user])
 
   //* Send Message
+  const [screenshot, setScreenshot] = useState(undefined)
   const [message, setMessage] = useState("")
   const onChange = e => setMessage(e.target.value)
 
   const send = () => {
-    if (!message) return
+    if (!message && !screenshot) return
 
     submit(
       {
         message,
+        image: screenshot,
         from: JSON.stringify(user),
         to: JSON.stringify(focusedUser),
       },
       { method: "post" }
     )
-    socket.current.emit("send-message", {
-      to: focusedUser._id,
+    socket.emit("send-message", {
+      to: typeof focusedUser === "string" ? focusedUser : focusedUser._id,
       from: user._id,
       message,
+      image: screenshot,
     })
-    setFeed(curr => [...curr, { fromSelf: true, message }])
+    setFeed(curr => [...curr, { fromSelf: true, message, image: screenshot }])
     setTimeout(() => setMessage(""))
+    setScreenshot(undefined)
   }
 
   //* Emoji Picker
@@ -104,6 +139,20 @@ export default function Diligent() {
     return () => clearTimeout(timeout)
   }, [focusedUser])
 
+  //* ScreenShots
+  const handlePaste = async e => {
+    const clipboardItems = e.clipboardData.items
+    for (let i = 0; i < clipboardItems.length; i++) {
+      const item = clipboardItems[i]
+      if (item.type.indexOf("image") === -1) continue
+      const blob = item.getAsFile()
+      const reducedFileSize = await reduceImageFileSize(blob)
+      const base64 = await convertBlobToBase64(reducedFileSize)
+      setScreenshot(base64)
+      autoResize.current.focus()
+    }
+  }
+
   return (
     <>
       <Container>
@@ -120,10 +169,10 @@ export default function Diligent() {
               <Name>The Duck</Name>
             </Contact>
             <Contact
-              selected={focusedUser === "general"}
-              onClick={() => openChatWith("general")}
+              selected={focusedUser === "c:GENERAL"}
+              onClick={() => openChatWith("c:GENERAL")}
             >
-              <DuckAvatar src={Logo} alt="General" />
+              <DuckAvatar src={Logo} alt="c:GENERAL" />
               <Name>General</Name>
             </Contact>
             {users.map(user => {
@@ -135,7 +184,10 @@ export default function Diligent() {
                   onClick={() => openChatWith(user)}
                 >
                   <Avatar src={getAvatar(avatarImage)} alt="avatar" />
-                  <Name>{username}</Name>
+                  <FlexBetween>
+                    <Name>{username}</Name>
+                    {notifications.includes(_id) && <Bubble />}
+                  </FlexBetween>
                 </Contact>
               )
             })}
@@ -149,8 +201,8 @@ export default function Diligent() {
               <ChatHeader>
                 <Title>Chat Room</Title>
                 <UserDetails>
-                  {focusedUser === "general" ? (
-                    <DuckAvatar src={Logo} alt="General" />
+                  {focusedUser === "c:GENERAL" ? (
+                    <DuckAvatar src={Logo} alt="c:GENERAL" />
                   ) : (
                     <Avatar
                       src={getAvatar(focusedUser.avatarImage)}
@@ -158,8 +210,8 @@ export default function Diligent() {
                     />
                   )}
                   <Name>
-                    {focusedUser === "general"
-                      ? "General"
+                    {focusedUser === "c:GENERAL"
+                      ? "c:GENERAL"
                       : focusedUser.username}
                   </Name>
                 </UserDetails>
@@ -178,10 +230,41 @@ export default function Diligent() {
                 >
                   <BsEmojiSmileFill />
                 </EmojiButton>
+
+                <EmojiButton>
+                  {screenshot ? (
+                    <SCImage>
+                      <X onClick={() => setScreenshot(undefined)}>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke-width="1.5"
+                          stroke="currentColor"
+                          class="w-6 h-6"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </X>
+                      <img src={screenshot} alt="screenshot" />
+                    </SCImage>
+                  ) : (
+                    <ScreenShotBox
+                      placeholder="SC"
+                      value=""
+                      onPaste={handlePaste}
+                    />
+                  )}
+                </EmojiButton>
+
                 <ChatInput
                   value={message}
                   onChange={onChange}
-                  onKeyDown={e => e.shiftKey && e.key === "Enter" && send()}
+                  onKeyDown={e => !e.shiftKey && e.key === "Enter" && send()}
                   ref={autoResize}
                   type="text"
                   placeholder="Message..."
@@ -227,3 +310,10 @@ const EmojiButton = styled.button(({ open }) => [
 const PickerWrapper = tw.div`absolute bottom-16 left-0 w-80 right-0 `
 const ChatInput = tw.textarea`w-full max-h-[20rem] h-12 rounded-xl px-4 py-2 outline-none resize-none bg-[#080420] text-white text-xl placeholder-[#997ae5] border-2 border-[#00000076] focus:(border-[#997af0]) [&::-webkit-scrollbar]:w-0`
 const SendButton = tw.button`transition-all bg-[#131324] flex justify-center items-center border-2 border-transparent hover:(bg-[#080420] scale-[102%] border-[#997ae5]) text-white text-xl rounded-xl h-11 px-4 pt-2.5 pb-2`
+
+const ScreenShotBox = tw.input`w-6 h-6 bg-transparent pl-0.5`
+const SCImage = tw.div`relative`
+const X = tw.button`absolute z-10 top-0 right-0 w-6 h-6 [svg]:text-white bg-red-400  rounded-full text-lg flex items-center justify-center transition-all ease-in-out hover:(bg-red-500 scale-[102%] shadow)`
+
+const Bubble = tw.div`w-3 h-3 rounded-full bg-[#997ae5]`
+const FlexBetween = tw.div`flex justify-between w-full items-center`
