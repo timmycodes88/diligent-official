@@ -1,7 +1,7 @@
-import { forwardRef, useEffect, useRef } from "react"
-import tw, { styled } from "twin.macro"
-import SyntaxHighlighter from "react-syntax-highlighter"
-import { nightOwl } from "react-syntax-highlighter/dist/esm/styles/hljs"
+import { forwardRef, useEffect, useRef } from 'react'
+import tw, { styled } from 'twin.macro'
+import SyntaxHighlighter from 'react-syntax-highlighter'
+import { nightOwl } from 'react-syntax-highlighter/dist/esm/styles/hljs'
 
 const Feed = forwardRef(({ feed }, ref) => {
   //* Scroll to Last Message
@@ -11,7 +11,7 @@ const Feed = forwardRef(({ feed }, ref) => {
     const timeout = setTimeout(
       () =>
         lastMessage.current &&
-        lastMessage.current.scrollIntoView({ behavior: "smooth" }),
+        lastMessage.current.scrollIntoView({ behavior: 'smooth' }),
       20
     )
     return () => clearTimeout(timeout)
@@ -21,7 +21,7 @@ const Feed = forwardRef(({ feed }, ref) => {
     <StyledFeed ref={ref}>
       {feed?.map(({ fromSelf, message, image }, index) => {
         const isLastMessage = index === feed.length - 1
-        const splitMessage = message.split("```")
+        const splitMessage = message.split('```')
         return splitMessage.map((msg, index) => {
           if (index % 2 === 0) {
             if (!msg)
@@ -29,12 +29,12 @@ const Feed = forwardRef(({ feed }, ref) => {
                 <img
                   ref={isLastMessage ? lastMessage : undefined}
                   src={image}
-                  alt="screenshot"
+                  alt='screenshot'
                 />
               )
             return (
               <>
-                {index === 0 && image && <img src={image} alt="screenshot" />}
+                {/* {index === 0 && image && <img src={image} alt="screenshot" />} */}
                 <Message
                   key={index}
                   ref={isLastMessage ? lastMessage : undefined}
@@ -51,7 +51,7 @@ const Feed = forwardRef(({ feed }, ref) => {
                 fromSelf={fromSelf}
               >
                 <CodeContainer fromSelf={fromSelf}>
-                  <SyntaxHighlighter language="javascript" style={nightOwl}>
+                  <SyntaxHighlighter language='javascript' style={nightOwl}>
                     {msg}
                   </SyntaxHighlighter>
                 </CodeContainer>

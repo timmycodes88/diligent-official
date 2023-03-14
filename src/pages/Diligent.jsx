@@ -1,20 +1,20 @@
-import { useEffect, useRef, useState } from "react"
-import { NavLink, useLoaderData, useSubmit } from "react-router-dom"
-import { ToastContainer } from "react-toastify"
-import tw, { styled } from "twin.macro"
-import { getAvatar } from "../utils/getAvatar"
-import Logo from "../assets/logo.svg"
-import Welcome from "../components/Welcome"
-import Feed from "../components/Feed"
-import Duck from "../assets/the-duck.png"
-import Picker from "emoji-picker-react"
-import { BsEmojiSmileFill } from "react-icons/bs"
-import useOnClickOutside from "../hooks/useOnClickOutside"
-import axios from "axios"
-import { getMessagesRoute, host } from "../utils/APIRoutes"
-import { io } from "socket.io-client"
-import { convertBlobToBase64 } from "../utils/convert"
-import reduceImageFileSize from "../utils/reduceImageFileSize"
+import { useEffect, useRef, useState } from 'react'
+import { NavLink, useLoaderData, useSubmit } from 'react-router-dom'
+import { ToastContainer } from 'react-toastify'
+import tw, { styled } from 'twin.macro'
+import { getAvatar } from '../utils/getAvatar'
+import Logo from '../assets/logo.svg'
+import Welcome from '../components/Welcome'
+import Feed from '../components/Feed'
+import Duck from '../assets/the-duck.png'
+import Picker from 'emoji-picker-react'
+import { BsEmojiSmileFill } from 'react-icons/bs'
+import useOnClickOutside from '../hooks/useOnClickOutside'
+import axios from 'axios'
+import { getMessagesRoute, host } from '../utils/APIRoutes'
+import { io } from 'socket.io-client'
+import { convertBlobToBase64 } from '../utils/convert'
+import reduceImageFileSize from '../utils/reduceImageFileSize'
 
 const socket = io(host)
 
@@ -29,13 +29,13 @@ export default function Diligent() {
   //* Socket Connection
   useEffect(() => {
     if (!user) return
-    socket.emit("add-user", user._id)
-    return () => socket.emit("remove-user", user._id)
+    socket.emit('add-user', user._id)
+    return () => socket.emit('remove-user', user._id)
   }, [user])
 
   //* Notifications
   const showNotification = (title, options) => {
-    if (Notification.permission !== "granted") {
+    if (Notification.permission !== 'granted') {
       Notification.requestPermission()
     } else {
       new Notification(title, options)
@@ -46,19 +46,24 @@ export default function Diligent() {
   useEffect(() => {
     Notification.requestPermission()
 
-    const handleMessage = ({ message, from, image }) => {
+    const handleMessage = msgg => {
+      const { to, message, from, image } = msgg
       const user = findUser(from)
-      if (user !== focusedUser) setNotifications(curr => [...curr, from])
+      if (to === 'c:GENERAL' && focusedUser !== 'c:GENERAL')
+        setNotifications(curr => [...curr, 'GENERAL'])
+      else if (user !== focusedUser) setNotifications(curr => [...curr, from])
       showNotification(user.username, {
         body: message,
       })
+      if (focusedUser !== 'c:GENERAL' && to === 'c:GENERAL') return
+      if (focusedUser._id !== from) return
       setFeed(curr =>
         !curr ? curr : [...curr, { fromSelf: false, message, image }]
       )
     }
 
-    socket.on("receive-message", handleMessage)
-    return () => socket.off("receive-message", handleMessage)
+    socket.on('receive-message', handleMessage)
+    return () => socket.off('receive-message', handleMessage)
   }, [])
 
   //* User and Chat Data State
@@ -68,8 +73,9 @@ export default function Diligent() {
   //* Change Feed on Focus Change
   useEffect(() => {
     if (!focusedUser) return
-    if (typeof focusedUser === "object")
+    if (typeof focusedUser === 'object')
       setNotifications(curr => curr.filter(id => id !== focusedUser._id))
+    else setNotifications(curr => curr.filter(id => id !== 'GENERAL'))
 
     const fetchMessages = async () => {
       const { data } = await axios.post(getMessagesRoute, {
@@ -83,7 +89,7 @@ export default function Diligent() {
 
   //* Send Message
   const [screenshot, setScreenshot] = useState(undefined)
-  const [message, setMessage] = useState("")
+  const [message, setMessage] = useState('')
   const onChange = e => setMessage(e.target.value)
 
   const send = () => {
@@ -96,16 +102,16 @@ export default function Diligent() {
         from: JSON.stringify(user),
         to: JSON.stringify(focusedUser),
       },
-      { method: "post" }
+      { method: 'post' }
     )
-    socket.emit("send-message", {
-      to: typeof focusedUser === "string" ? focusedUser : focusedUser._id,
+    socket.emit('send-message', {
+      to: typeof focusedUser === 'string' ? focusedUser : focusedUser._id,
       from: user._id,
       message,
       image: screenshot,
     })
     setFeed(curr => [...curr, { fromSelf: true, message, image: screenshot }])
-    setTimeout(() => setMessage(""))
+    setTimeout(() => setMessage(''))
     setScreenshot(undefined)
   }
 
@@ -125,7 +131,7 @@ export default function Diligent() {
   useEffect(() => {
     if (!autoResize.current) return
     autoResize.current.style.height = null
-    autoResize.current.style.height = autoResize.current.scrollHeight + "px"
+    autoResize.current.style.height = autoResize.current.scrollHeight + 'px'
   }, [message])
 
   //* Start Scroll to Bottom on Focused User Change
@@ -144,7 +150,7 @@ export default function Diligent() {
     const clipboardItems = e.clipboardData.items
     for (let i = 0; i < clipboardItems.length; i++) {
       const item = clipboardItems[i]
-      if (item.type.indexOf("image") === -1) continue
+      if (item.type.indexOf('image') === -1) continue
       const blob = item.getAsFile()
       const reducedFileSize = await reduceImageFileSize(blob)
       const base64 = await convertBlobToBase64(reducedFileSize)
@@ -158,22 +164,25 @@ export default function Diligent() {
       <Container>
         <Left>
           <LoggedInUser>
-            <Avatar src={getAvatar(user.avatarImage)} alt="avatar" />
+            <Avatar src={getAvatar(user.avatarImage)} alt='avatar' />
             <Name>{user.username}</Name>
-            <Logout to="/logout">Logout</Logout>
+            <Logout to='/logout'>Logout</Logout>
           </LoggedInUser>
           <Title>Contacts</Title>
           <Contacts>
-            <Contact as={`a`} href="https:/chat.openai.com" target="_blank">
-              <DuckAvatar color={1} src={Duck} alt="chatGPT" />
+            <Contact as={`a`} href='https:/chat.openai.com' target='_blank'>
+              <DuckAvatar color={1} src={Duck} alt='chatGPT' />
               <Name>The Duck</Name>
             </Contact>
             <Contact
-              selected={focusedUser === "c:GENERAL"}
-              onClick={() => openChatWith("c:GENERAL")}
+              selected={focusedUser === 'c:GENERAL'}
+              onClick={() => openChatWith('c:GENERAL')}
             >
-              <DuckAvatar src={Logo} alt="c:GENERAL" />
-              <Name>General</Name>
+              <DuckAvatar src={Logo} alt='c:GENERAL' />
+              <FlexBetween>
+                <Name>General</Name>
+                {notifications.includes('GENERAL') && <Bubble />}
+              </FlexBetween>
             </Contact>
             {users.map(user => {
               const { avatarImage, username, _id } = user
@@ -183,7 +192,7 @@ export default function Diligent() {
                   selected={_id === focusedUser?._id}
                   onClick={() => openChatWith(user)}
                 >
-                  <Avatar src={getAvatar(avatarImage)} alt="avatar" />
+                  <Avatar src={getAvatar(avatarImage)} alt='avatar' />
                   <FlexBetween>
                     <Name>{username}</Name>
                     {notifications.includes(_id) && <Bubble />}
@@ -201,17 +210,17 @@ export default function Diligent() {
               <ChatHeader>
                 <Title>Chat Room</Title>
                 <UserDetails>
-                  {focusedUser === "c:GENERAL" ? (
-                    <DuckAvatar src={Logo} alt="c:GENERAL" />
+                  {focusedUser === 'c:GENERAL' ? (
+                    <DuckAvatar src={Logo} alt='c:GENERAL' />
                   ) : (
                     <Avatar
                       src={getAvatar(focusedUser.avatarImage)}
-                      alt="avatar"
+                      alt='avatar'
                     />
                   )}
                   <Name>
-                    {focusedUser === "c:GENERAL"
-                      ? "c:GENERAL"
+                    {focusedUser === 'c:GENERAL'
+                      ? 'c:GENERAL'
                       : focusedUser.username}
                   </Name>
                 </UserDetails>
@@ -225,7 +234,7 @@ export default function Diligent() {
                 )}
                 <EmojiButton
                   open={showEmojiPicker}
-                  className={showEmojiPicker && "pointer-events-none"}
+                  className={showEmojiPicker && 'pointer-events-none'}
                   onClick={openEmojiPicker}
                 >
                   <BsEmojiSmileFill />
@@ -236,26 +245,26 @@ export default function Diligent() {
                     <SCImage>
                       <X onClick={() => setScreenshot(undefined)}>
                         <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke-width="1.5"
-                          stroke="currentColor"
-                          class="w-6 h-6"
+                          xmlns='http://www.w3.org/2000/svg'
+                          fill='none'
+                          viewBox='0 0 24 24'
+                          stroke-width='1.5'
+                          stroke='currentColor'
+                          class='w-6 h-6'
                         >
                           <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M6 18L18 6M6 6l12 12"
+                            stroke-linecap='round'
+                            stroke-linejoin='round'
+                            d='M6 18L18 6M6 6l12 12'
                           />
                         </svg>
                       </X>
-                      <img src={screenshot} alt="screenshot" />
+                      <img src={screenshot} alt='screenshot' />
                     </SCImage>
                   ) : (
                     <ScreenShotBox
-                      placeholder="SC"
-                      value=""
+                      placeholder='SC'
+                      value=''
                       onPaste={handlePaste}
                     />
                   )}
@@ -264,10 +273,10 @@ export default function Diligent() {
                 <ChatInput
                   value={message}
                   onChange={onChange}
-                  onKeyDown={e => !e.shiftKey && e.key === "Enter" && send()}
+                  onKeyDown={e => !e.shiftKey && e.key === 'Enter' && send()}
                   ref={autoResize}
-                  type="text"
-                  placeholder="Message..."
+                  type='text'
+                  placeholder='Message...'
                 />
                 <SendButton onClick={send}>Send</SendButton>
               </ChatInputBox>
